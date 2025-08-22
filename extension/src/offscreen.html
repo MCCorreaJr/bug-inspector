@@ -1,0 +1,82 @@
+
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>offscreen</title></head>
+<body>
+<script type="module">
+let mediaRecorder;
+let chunks = [];
+let stream;
+let mode = 'idle'; // 'replay' | 'record'
+let ring = []; // ring buffer for replay (array of Blobs)
+let ringMax = 4; // ~4 chunks x 30s = 120s
+let chunkMs = 30000;
+let lastStart = 0;
+
+function now() { return performance.now(); }
+
+async function ensureStream() {
+  if (!stream) {
+    stream = await chrome.tabCapture.capture({ audio: true, video: true });
+  }
+  return stream;
+}
+
+function resetRecorder(timeslice = chunkMs) {
+  chunks = [];
+  mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(chunks, { type: 'video/webm' });
+    if (mode === 'replay') {
+      ring.push(blob);
+      if (ring.length > ringMax) ring.shift();
+    } else if (mode === 'record') {
+      chrome.runtime.sendMessage({ type: 'REC_CHUNK', blob });
+    }
+  };
+  mediaRecorder.start(timeslice);
+}
+
+async function startReplay() {
+  await ensureStream();
+  mode = 'replay';
+  resetRecorder();
+  lastStart = now();
+  setInterval(() => {
+    if (mode !== 'replay') return;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    resetRecorder();
+  }, chunkMs + 250);
+}
+
+async function saveReplay(endpoint) {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  // Concatena blobs do ring
+  const all = new Blob(ring, { type: 'video/webm' });
+  const buf = await all.arrayBuffer();
+  chrome.runtime.sendMessage({ type: 'REPLAY_EXPORT', endpoint, buffer: buf });
+}
+
+async function startRecord() {
+  await ensureStream();
+  mode = 'record';
+  resetRecorder(0); // continuous, we manually stop
+}
+
+async function stopRecord(endpoint) {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  mode = 'idle';
+  // chunks foram enviados via REC_CHUNK; aqui sinalizamos término
+  chrome.runtime.sendMessage({ type: 'REC_DONE', endpoint });
+}
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'REPLAY_START') startReplay();
+  if (msg.type === 'REPLAY_SAVE') saveReplay(msg.endpoint);
+  if (msg.type === 'REC_START') startRecord();
+  if (msg.type === 'REC_STOP') stopRecord(msg.endpoint);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>bug-inspector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 12px; width: 320px; }
+    button { padding: 8px 10px; margin: 4px 0; width: 100%; }
+    .row { display: flex; gap: 8px; }
+    .row > button { flex: 1; }
+    input[type=text] { width: 100%; padding: 6px; margin: 6px 0; }
+    small { color: #555; }
+    .status { margin-top: 8px; min-height: 1.4em; }
+  </style>
+</head>
+<body>
+  <h3>bug-inspector</h3>
+
+  <div class="row">
+    <button id="btnOpenEditor">Open Editor</button>
+  </div>
+
+  <div class="row">
+    <button id="btnStartReplay">Start Replay</button>
+    <button id="btnSaveReplay">Save Replay</button>
+  </div>
+
+  <div class="row">
+    <button id="btnStartRec">Start Recording</button>
+    <button id="btnStopRec">Stop</button>
+  </div>
+
+  <label>Upload endpoint</label>
+  <input id="endpoint" type="text" placeholder="http://localhost:8787/api/upload" />
+  <button id="btnSaveSettings">Save Settings</button>
+  <small>Replay mantém buffer circular de ~120s. Gravação normal até você parar.</small>
+
+  <div class="status" id="status"></div>
+
+  <script type="module">
+    // NADA de "\n" literais aqui. Apenas quebras de linha reais.
+
+    const $ = (sel) => document.querySelector(sel);
+    const status = (msg) => { $('#status').textContent = msg || ''; };
+
+    async function getEndpoint() {
+      const { endpoint } = await chrome.storage.local.get({ endpoint: 'http://localhost:8787/api/upload' });
+      return endpoint;
+    }
+
+    async function saveSettings() {
+      const ep = $('#endpoint').value.trim();
+      await chrome.storage.local.set({ endpoint: ep || 'http://localhost:8787/api/upload' });
+      status('Endpoint salvo.');
+    }
+
+    async function load() {
+      $('#endpoint').value = await getEndpoint();
+    }
+
+    // Botões
+    $('#btnOpenEditor').addEventListener('click', async () => {
+      await chrome.tabs.create({ url: 'editor.html' });
+    });
+
+    $('#btnSaveSettings').addEventListener('click', saveSettings);
+
+    $('#btnStartReplay').addEventListener('click', async () => {
+      await chrome.runtime.sendMessage({ type: 'REPLAY_START', seconds: 120 });
+      status('Replay ON (120s).');
+    });
+
+    $('#btnSaveReplay').addEventListener('click', async () => {
+      const ep = await getEndpoint();
+      await chrome.runtime.sendMessage({ type: 'REPLAY_SAVE', endpoint: ep });
+      status('Salvando replay...');
+    });
+
+    $('#btnStartRec').addEventListener('click', async () => {
+      await chrome.runtime.sendMessage({ type: 'REC_START' });
+      status('Gravando...');
+    });
+
+    $('#btnStopRec').addEventListener('click', async () => {
+      const ep = await getEndpoint();
+      await chrome.runtime.sendMessage({ type: 'REC_STOP', endpoint: ep });
+      status('Parou. Enviando...');
+    });
+
+    load();
+  </script>
+</body>
+</html>

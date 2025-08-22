@@ -1,0 +1,26 @@
+{
+  "name": "bug-inspector",
+  "version": "0.1.0",
+  "description": "Replay, grava\u00e7\u00e3o, editor e upload para servidor privado.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:8787/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*",
+        "assets/ffmpeg/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

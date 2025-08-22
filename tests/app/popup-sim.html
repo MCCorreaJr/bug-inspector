@@ -1,0 +1,22 @@
+
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>popup-sim</title></head>
+<body>
+  <button id="startReplay">Start Replay</button>
+  <button id="saveReplay">Save Replay</button>
+  <button id="startRec">Start Recording</button>
+  <button id="stopRec">Stop</button>
+  <input id="endpoint" value="http://localhost:8787/api/upload" />
+  <button id="save">Save Settings</button>
+  <script>
+    // Apenas para POC de testes
+    window.__state = { replay: false, recording: false, endpoint: document.querySelector('#endpoint').value };
+    document.querySelector('#startReplay').onclick = () => window.__state.replay = true;
+    document.querySelector('#saveReplay').onclick = () => window.__state.replay = 'saved';
+    document.querySelector('#startRec').onclick = () => window.__state.recording = true;
+    document.querySelector('#stopRec').onclick = () => window.__state.recording = false;
+    document.querySelector('#save').onclick = () => window.__state.endpoint = document.querySelector('#endpoint').value;
+  </script>
+</body>
+</html>

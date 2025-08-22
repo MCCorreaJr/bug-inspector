@@ -1,0 +1,17 @@
+{
+  "name": "bug-inspector-extension-src",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "vite build && node ../extension/scripts/build-manifest.js && node ../extension/scripts/copy-ffmpeg-core.js",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@ffmpeg/ffmpeg": "*",
+    "@ffmpeg/core": "*"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "typescript": "^5.0.0"
+  }
+}

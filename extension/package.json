@@ -1,0 +1,22 @@
+{
+  "name": "bug-inspector-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/copy-ffmpeg-core.js && node scripts/build-manifest.js",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.1"
+  },
+  "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "webextension-polyfill": "^0.10.0"
+  }
+}

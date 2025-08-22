@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "bug-inspector",
+  "version": "0.1.0",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "tabCapture",
+    "storage",
+    "scripting",
+    "activeTab",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "http://localhost:8787/*"
+  ],
+  "background": {
+    "service_worker": "sw.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "offscreen.html",
+        "assets/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    },
+    {
+      "resources": [
+        "editor.html",
+        "assets/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

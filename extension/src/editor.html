@@ -1,0 +1,88 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>bug-inspector — Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 12px; max-width: 960px; }
+    fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    label { display: block; margin: 6px 0 2px; }
+    input[type=number], input[type=text] { width: 160px; padding: 6px; }
+    button { padding: 8px 12px; margin: 6px 6px 6px 0; }
+    #video { width: 100%; max-height: 360px; background: #000; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .muted { color: #666; font-size: 12px; }
+    #log { font-size: 12px; white-space: pre-wrap; background: #f7f7f7; padding: 8px; border-radius: 6px; max-height: 160px; overflow: auto; }
+    table { border-collapse: collapse; }
+    td, th { border: 1px solid #ddd; padding: 6px 8px; }
+    .success { color: #0a6; }
+  </style>
+</head>
+<body>
+  <h2>Editor — Trim, Blur, Markers</h2>
+  <video id="video" controls></video>
+  <div class="muted">Carregue a última captura da extensão ou selecione um arquivo WebM/MP4.</div>
+  <div class="row">
+    <button id="btnLoadLast">Carregar última captura</button>
+    <input id="file" type="file" accept="video/*" />
+  </div>
+
+  <fieldset>
+    <legend>Trim</legend>
+    <div class="row">
+      <label>Início (s)</label>
+      <input id="start" type="number" value="0" min="0" step="0.1" />
+      <label>Fim (s)</label>
+      <input id="end" type="number" value="0" min="0" step="0.1" />
+      <button id="btnAuto">Usar duração do vídeo</button>
+      <button id="btnSetStartAtCurrent">Início = tempo atual</button>
+      <button id="btnSetEndAtCurrent">Fim = tempo atual</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Blur (múltiplas regiões)</legend>
+    <div class="row">
+      <button id="btnAddRegion">Adicionar região</button>
+      <input id="presetName" type="text" placeholder="nome do preset" />
+      <button id="btnSavePreset">Salvar preset</button>
+      <select id="presetSelect"></select>
+      <button id="btnLoadPreset">Carregar preset</button>
+      <button id="btnDeletePreset">Excluir preset</button>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>X</th><th>Y</th><th>Largura</th><th>Altura</th><th>Força</th><th>Ações</th></tr></thead>
+      <tbody id="regions"></tbody>
+    </table>
+    <div class="muted">Dica: use o tempo do vídeo para posicionar regiões em frames específicos; valores são em pixels.</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Marcadores (timeline)</legend>
+    <div class="row">
+      <button id="btnAddMarker">Adicionar marcador (tempo atual)</button>
+      <button id="btnClearMarkers">Limpar marcadores</button>
+    </div>
+    <ul id="markers"></ul>
+  </fieldset>
+
+  <fieldset>
+    <legend>Exportar</legend>
+    <div class="row">
+      <button id="btnProcess">Processar (trim + blur)</button>
+      <a id="download" href="#" download="edited.webm" style="display:none;">Baixar resultado</a>
+    </div>
+    <div class="row">
+      <input id="endpoint" type="text" placeholder="http://localhost:8787/api/upload" />
+      <button id="btnUploadEdited">Upload editado</button>
+      <span id="uploadedMsg" class="success"></span>
+    </div>
+  </fieldset>
+
+  <div id="log"></div>
+
+  <script type="module" src="assets/editor-advanced.js"></script>
+</body>
+</html>

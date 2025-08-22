@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>bug‑inspector</title>
+    <style>body{font:14px system-ui, sans-serif; margin:12px} input,button{margin-top:6px}</style>
+  </head>
+  <body>
+    <h1>bug‑inspector</h1>
+    <label>
+      Endpoint
+      <input id="endpoint" placeholder="http://localhost:8787/api/upload" size="40"/>
+    </label>
+    <div>
+      <button id="ping">Testar /health</button>
+    </div>
+    <script>
+      const ep = document.getElementById('endpoint');
+      ep.value = localStorage.getItem('bi:endpoint') || 'http://localhost:8787/api/upload';
+      ep.addEventListener('change', () => localStorage.setItem('bi:endpoint', ep.value));
+      document.getElementById('ping').onclick = async () => {
+        try {
+          const url = new URL(ep.value); url.pathname = '/health';
+          const r = await fetch(url).then(r=>r.json());
+          alert(JSON.stringify(r));
+        } catch (e) {
+          alert(String(e));
+        }
+      };
+    </script>
+  </body>
+</html>
