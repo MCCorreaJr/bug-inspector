@@ -1,9 +1,10 @@
-// src/sw.ts
+// src/sw.ts (background service worker in MV3)
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
 
-async function uploadBlob(blob, filename, kind, endpoint) {
-  if (!blob || !blob.size) throw new Error('Blob vazio')
+async function uploadBlobDirect(bytes, filename, kind, endpoint) {
+  const blob = new Blob([new Uint8Array(bytes)], { type: 'video/webm' })
+  if (!blob.size) throw new Error('Blob vazio')
   const fd = new FormData()
   fd.append(kind === 'replay' ? 'replay' : 'record', blob, filename || 'clip.webm')
   fd.append('meta', JSON.stringify({ kind, ts: Date.now() }))
@@ -12,14 +13,21 @@ async function uploadBlob(blob, filename, kind, endpoint) {
   return res.json()
 }
 
-self.addEventListener('message', (evt) => {
-  const msg = evt.data || {}
-  if (msg?.type === 'UPLOAD_BLOB') {
-    const { blob, filename, kind = 'record', endpoint } = msg.payload || {}
-    uploadBlob(blob, filename, kind, endpoint)
-      .then((json) => self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-        .then(cs => cs.forEach(c => c.postMessage({ type: 'UPLOAD_OK', data: json }))))
-      .catch((err) => self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-        .then(cs => cs.forEach(c => c.postMessage({ type: 'UPLOAD_FAIL', error: String(err) }))))
-  }
+// MV3 runtime messaging from popup
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  (async () => {
+    try {
+      if (msg?.type === 'UPLOAD_BLOB_DATA') {
+        const { bytes, filename, kind, endpoint } = msg.payload || {}
+        await uploadBlobDirect(bytes, filename, kind, endpoint)
+        sendResponse({ ok: true })
+      } else if (msg?.type === 'UPLOAD_BLOB') {
+        // noop here; data arrives via UPLOAD_BLOB_DATA in this simple scheme
+        sendResponse({ ok: true })
+      }
+    } catch (e) {
+      sendResponse({ ok: false, error: String(e) })
+    }
+  })()
+  return true // keep channel open for async sendResponse
 })
