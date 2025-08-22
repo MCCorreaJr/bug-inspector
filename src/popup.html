@@ -2,34 +2,42 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>bug‑inspector</title>
     <style>
-      body{font:14px system-ui, sans-serif; margin:12px; width:320px}
-      .row{margin:8px 0}
-      input[type="text"]{width:100%}
-      button{margin-right:6px}
-      .badge{display:inline-block; padding:.2rem .5rem; border-radius:8px; background:#eee}
+      :root{ --w: 360px; }
+      html, body {
+        margin: 0; padding: 0;
+        font: 14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        width: var(--w); max-width: var(--w);
+        height: auto; max-height: 600px;
+        overflow-y: auto; box-sizing: border-box;
+      }
+      body { padding: 12px; }
+      h1 { margin: 0 0 8px; font-size: 18px; }
+      .row{ margin:8px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+      input[type="text"]{ width:100%; box-sizing:border-box; }
+      button{ padding:6px 10px; }
+      small{ color:#555; }
     </style>
   </head>
   <body>
     <h1>bug‑inspector</h1>
 
     <div class="row">
-      <label>Endpoint</label>
+      <label style="width:100%">Endpoint</label>
       <input id="endpoint" type="text" placeholder="http://localhost:8787/api/upload"/>
     </div>
 
     <div class="row">
-      <button id="btnStart">Gravar</button>
-      <button id="btnStop" disabled>Parar</button>
-      <button id="btnSaveReplay" disabled>Salvar Replay (~120s)</button>
-      <span class="badge" id="status">idle</span>
+      <button id="openRecorder">Abrir gravador</button>
     </div>
 
     <div class="row">
-      <small>Duração: <span id="timer">00:00</span></small>
+      <small>Dica: o gravador abre em uma nova aba para evitar cortes do seletor do Chrome.</small>
     </div>
 
+    <!-- IMPORTANTE: sem inline; importar o .ts -->
     <script type="module" src="./popup.ts"></script>
   </body>
 </html>

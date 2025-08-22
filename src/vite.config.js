@@ -8,16 +8,18 @@ export default {
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        popup: resolve(__dirname, 'popup.html'),
-        editor: resolve(__dirname, 'editor.html'),
-        offscreen: resolve(__dirname, 'offscreen.html'),
-        sw: resolve(__dirname, 'sw.ts'),
-        content: resolve(__dirname, 'content.ts')
+        popup:    resolve(__dirname, 'popup.html'),
+        recorder: resolve(__dirname, 'recorder.html'),
+        editor:   resolve(__dirname, 'editor.html'),
+        offscreen:resolve(__dirname, 'offscreen.html'),
+        sw:       resolve(__dirname, 'sw.ts'),
+        content:  resolve(__dirname, 'content.ts')
       },
       output: {
         entryFileNames: (chunk) => chunk.name === 'sw' ? '[name].js' : 'assets/[name].js',
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: (asset) => asset.name?.endsWith('.css') ? 'assets/[name]-[hash][extname]' : 'assets/[name][extname]'
+        assetFileNames: (asset) =>
+          asset.name?.endsWith('.css') ? 'assets/[name]-[hash][extname]' : 'assets/[name][extname]'
       }
     }
   }
