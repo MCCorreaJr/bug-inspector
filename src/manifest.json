@@ -1,16 +1,18 @@
 {
   "name": "bug-inspector",
-  "version": "0.1.0",
-  "description": "Replay, gravação, editor e upload para servidor privado.",
-  "manifest_version": 3,
+  "version": "0.6.0",
+  "description": "Instant Replay (3 min por guia) e gravação tradicional com upload.",
   "action": { "default_popup": "popup.html" },
-  "permissions": ["storage", "activeTab", "tabs"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "tabCapture",
+    "scripting",
+    "offscreen"
+  ],
   "host_permissions": ["http://localhost:8787/*"],
   "web_accessible_resources": [
-    {
-      "resources": ["assets/*", "assets/ffmpeg/*"],
-      "matches": ["<all_urls>"]
-    }
-  ],
-  "background": { "service_worker": "sw.js", "type": "module" }
+    { "resources": ["assets/*", "assets/ffmpeg/*"], "matches": ["<all_urls>"] }
+  ]
 }

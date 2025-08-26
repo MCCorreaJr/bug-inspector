@@ -8,12 +8,13 @@ export default {
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        popup:    resolve(__dirname, 'popup.html'),
-        recorder: resolve(__dirname, 'recorder.html'),
-        editor:   resolve(__dirname, 'editor.html'),
-        offscreen:resolve(__dirname, 'offscreen.html'),
-        sw:       resolve(__dirname, 'sw.ts'),
-        content:  resolve(__dirname, 'content.ts')
+        popup:          resolve(__dirname, 'popup.html'),
+        recorder:       resolve(__dirname, 'editor.html'),     // se quiser manter como placeholder
+        sw:             resolve(__dirname, 'sw.ts'),
+        content:        resolve(__dirname, 'content.ts'),
+        'replay-modal': resolve(__dirname, 'replay-modal.ts'),
+        offscreen:      resolve(__dirname, 'offscreen.html'),
+        'replay-probe': resolve(__dirname, 'replay-probe.ts')
       },
       output: {
         entryFileNames: (chunk) => chunk.name === 'sw' ? '[name].js' : 'assets/[name].js',

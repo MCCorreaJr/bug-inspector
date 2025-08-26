@@ -3,41 +3,44 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>bug‑inspector</title>
+    <title>bug-inspector</title>
     <style>
       :root{ --w: 360px; }
-      html, body {
-        margin: 0; padding: 0;
-        font: 14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        width: var(--w); max-width: var(--w);
-        height: auto; max-height: 600px;
-        overflow-y: auto; box-sizing: border-box;
-      }
-      body { padding: 12px; }
-      h1 { margin: 0 0 8px; font-size: 18px; }
-      .row{ margin:8px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+      html, body { margin:0; padding:0; width:var(--w); max-width:var(--w); font:14px system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+      body { padding:12px; }
+      h1 { margin:0 0 8px; font-size:18px; display:flex; align-items:center; gap:8px; }
+      .card { border:1px solid #ddd; border-radius:10px; padding:10px; margin:10px 0; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+      .card .left { display:flex; align-items:center; gap:10px; }
+      .muted { color:#666; }
+      .row { margin:8px 0; }
       input[type="text"]{ width:100%; box-sizing:border-box; }
-      button{ padding:6px 10px; }
-      small{ color:#555; }
+      .badge{ background:#eee; border-radius:999px; padding:.2rem .6rem; }
+      .icon{ width:20px; height:20px; border-radius:4px; background:#f3f3f3; display:inline-block; }
     </style>
   </head>
   <body>
-    <h1>bug‑inspector</h1>
+    <h1>🍓 bug-inspector</h1>
 
     <div class="row">
-      <label style="width:100%">Endpoint</label>
+      <label>Endpoint</label>
       <input id="endpoint" type="text" placeholder="http://localhost:8787/api/upload"/>
     </div>
 
-    <div class="row">
-      <button id="openRecorder">Abrir gravador</button>
+    <div id="btnRecordTab" class="card">
+      <div class="left"><span class="icon"></span><div><div><strong>Record Tab</strong></div><div class="muted">Gravar guia (com overlay)</div></div></div>
+      <div class="badge">Mic Off</div>
     </div>
 
-    <div class="row">
-      <small>Dica: o gravador abre em uma nova aba para evitar cortes do seletor do Chrome.</small>
+    <div id="btnInstantReplay" class="card">
+      <div class="left"><span class="icon"></span><div><div><strong>Instant Replay</strong></div><div class="muted">Salvar últimos 3 minutos (guia)</div></div></div>
+      <div class="badge">Open</div>
     </div>
 
-    <!-- IMPORTANTE: sem inline; importar o .ts -->
+    <div id="btnOpenRecorder" class="card">
+      <div class="left"><span class="icon"></span><div><div><strong>Record Screen</strong></div><div class="muted">Gravação tradicional (tela/janela/guia)</div></div></div>
+      <div class="badge">Picker</div>
+    </div>
+
     <script type="module" src="./popup.ts"></script>
   </body>
 </html>
