@@ -1,0 +1,138 @@
+name: CI/CD Bug Inspector
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Server Dependencies
+        run: npm install
+        working-directory: ./server
+
+      - name: Run Server Tests
+        run: npm test
+        working-directory: ./server
+
+      - name: Install Extension Dependencies
+        run: npm install
+        working-directory: ./extension
+
+      - name: Build Extension
+        run: npm run build
+        working-directory: ./extension
+
+      - name: Upload Server Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bug-inspector-server
+          path: ./server
+          retention-days: 1
+
+      - name: Upload Extension Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bug-inspector-extension
+          path: ./extension/dist
+          retention-days: 1
+
+  deploy_homol:
+    needs: build_and_test
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    environment:
+      name: homologation
+      url: https://homologation.example.com
+    steps:
+      - name: Download Server Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bug-inspector-server
+          path: ./server
+
+      - name: Download Extension Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bug-inspector-extension
+          path: ./extension/dist
+
+      - name: Deploy to Homologation
+        run: |
+          echo "Deploying server to homologation..."
+          # Adicione aqui os comandos para deploy do servidor para o ambiente de homologação
+          # Ex: scp -r ./server user@homol-server:/var/www/bug-inspector-homol
+          echo "Deploying extension to homologation..."
+          # Adicione aqui os comandos para deploy da extensão para o ambiente de homologação
+          # Isso geralmente envolve copiar os arquivos para um servidor web ou um bucket de armazenamento
+          echo "Homologation deployment complete!"
+
+  deploy_main:
+    needs: build_and_test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://production.example.com
+    steps:
+      - name: Download Server Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bug-inspector-server
+          path: ./server
+
+      - name: Download Extension Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bug-inspector-extension
+          path: ./extension/dist
+
+      - name: Deploy to Production
+        run: |
+          echo "Deploying server to production..."
+          # Adicione aqui os comandos para deploy do servidor para o ambiente de produção
+          # Ex: scp -r ./server user@prod-server:/var/www/bug-inspector-prod
+          echo "Deploying extension to production..."
+          # Adicione aqui os comandos para deploy da extensão para o ambiente de produção
+          echo "Production deployment complete!"
+
+  # Job para commits automáticos (opcional, para a Manus)
+  # auto_commit:
+  #   needs: build_and_test
+  #   if: success()
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         token: ${{ secrets.GH_PAT }}
+
+  #     - name: Configure Git
+  #       run: |
+  #         git config user.name "github-actions[bot]"
+  #         git config user.email "github-actions[bot]@users.noreply.github.com"
+
+  #     - name: Commit changes (if any)
+  #       run: |
+  #         git add .
+  #         git diff --quiet || git commit -m "CI: Automated build and test updates"
+  #         git push
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+
