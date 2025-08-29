@@ -1,24 +1,30 @@
-import { resolve } from 'node:path'
+import { resolve } from 'path';
+import { defineConfig } from 'vite';
 
-export default {
-  root: resolve(__dirname),
-  publicDir: false,
+export default defineConfig({
+  root: __dirname,
   build: {
-    outDir: resolve(__dirname, '../extension/dist'),
+    outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'popup.html'),
-        editor: resolve(__dirname, 'editor.html'),
         offscreen: resolve(__dirname, 'offscreen.html'),
+        editor: resolve(__dirname, 'editor.html'),
         sw: resolve(__dirname, 'sw.ts'),
-        content: resolve(__dirname, 'content.ts')
+        content: resolve(__dirname, 'content.ts'),
+        'editor-advanced': resolve(__dirname, 'editor-advanced.js')
       },
       output: {
-        entryFileNames: (chunk) => chunk.name === 'sw' ? '[name].js' : 'assets/[name].js',
+        entryFileNames: (chunkInfo) => {
+          if (['sw', 'content', 'editor-advanced'].includes(chunkInfo.name)) {
+            return '[name].js';
+          }
+          return 'assets/[name].js';
+        },
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: (asset) => asset.name?.endsWith('.css') ? 'assets/[name]-[hash][extname]' : 'assets/[name][extname]'
+        assetFileNames: 'assets/[name]-[hash][extname]'
       }
     }
   }
-}
+});
