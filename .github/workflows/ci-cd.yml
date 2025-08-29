@@ -32,11 +32,11 @@ jobs:
 
       - name: Install Extension Dependencies
         run: npm install
-        working-directory: ./extension
+        working-directory: ./src
 
       - name: Build Extension
         run: npm run build
-        working-directory: ./extension
+        working-directory: ./src
 
       - name: Upload Server Artifacts
         uses: actions/upload-artifact@v4
@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bug-inspector-extension
-          path: ./extension/dist
+          path: ./src/dist
           retention-days: 1
 
   deploy_homol:
@@ -58,11 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: homologation
-<<<<<<< HEAD
-      url: https://homologation.example.com
-=======
       url: https://bug-inspector-homol-mcc.herokuapp.com
->>>>>>> dc6e9ea6ee94c62a9586211b26b576a62c26d4cc
     steps:
       - name: Download Server Artifact
         uses: actions/download-artifact@v4
@@ -74,19 +70,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bug-inspector-extension
-          path: ./extension/dist
+          path: ./src/dist
 
-<<<<<<< HEAD
-      - name: Deploy to Homologation
-        run: |
-          echo "Deploying server to homologation..."
-          # Adicione aqui os comandos para deploy do servidor para o ambiente de homologação
-          # Ex: scp -r ./server user@homol-server:/var/www/bug-inspector-homol
-          echo "Deploying extension to homologation..."
-          # Adicione aqui os comandos para deploy da extensão para o ambiente de homologação
-          # Isso geralmente envolve copiar os arquivos para um servidor web ou um bucket de armazenamento
-          echo "Homologation deployment complete!"
-=======
       - name: Deploy to Heroku Homologation
         run: |
           echo "Deploying to Heroku Homologation..."
@@ -97,7 +82,6 @@ jobs:
           echo "Homologation deployment complete!"
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
->>>>>>> dc6e9ea6ee94c62a9586211b26b576a62c26d4cc
 
   deploy_main:
     needs: build_and_test
@@ -105,11 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-<<<<<<< HEAD
-      url: https://production.example.com
-=======
       url: https://bug-inspector-prod-mcc.herokuapp.com
->>>>>>> dc6e9ea6ee94c62a9586211b26b576a62c26d4cc
     steps:
       - name: Download Server Artifact
         uses: actions/download-artifact@v4
@@ -121,44 +101,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bug-inspector-extension
-          path: ./extension/dist
+          path: ./src/dist
 
-<<<<<<< HEAD
-      - name: Deploy to Production
-        run: |
-          echo "Deploying server to production..."
-          # Adicione aqui os comandos para deploy do servidor para o ambiente de produção
-          # Ex: scp -r ./server user@prod-server:/var/www/bug-inspector-prod
-          echo "Deploying extension to production..."
-          # Adicione aqui os comandos para deploy da extensão para o ambiente de produção
-          echo "Production deployment complete!"
-
-  # Job para commits automáticos (opcional, para a Manus)
-  # auto_commit:
-  #   needs: build_and_test
-  #   if: success()
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         token: ${{ secrets.GH_PAT }}
-
-  #     - name: Configure Git
-  #       run: |
-  #         git config user.name "github-actions[bot]"
-  #         git config user.email "github-actions[bot]@users.noreply.github.com"
-
-  #     - name: Commit changes (if any)
-  #       run: |
-  #         git add .
-  #         git diff --quiet || git commit -m "CI: Automated build and test updates"
-  #         git push
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-
-
-=======
       - name: Deploy to Heroku Production
         run: |
           echo "Deploying to Heroku Production..."
@@ -169,4 +113,3 @@ jobs:
           echo "Production deployment complete!"
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
->>>>>>> dc6e9ea6ee94c62a9586211b26b576a62c26d4cc
