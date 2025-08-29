@@ -1,4 +1,3 @@
-// server/src/index.js
 import Fastify from 'fastify'
 import multipart from '@fastify/multipart'
 import cors from '@fastify/cors'
@@ -8,11 +7,14 @@ import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
+import archiver from 'archiver'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const ROOT = path.resolve(__dirname, '..')
 const STORAGE_DIR = path.join(ROOT, 'storage')
+const ENABLE_TRANSCODE = String(process.env.ENABLE_TRANSCODE || 'false').toLowerCase() === 'true'
 
 function sanitizeName(name) {
   return (name || 'upload.webm')
@@ -23,6 +25,26 @@ function sanitizeName(name) {
 
 async function ensureStorage() {
   await fsp.mkdir(STORAGE_DIR, { recursive: true })
+}
+
+async function transcodeToMp4(srcWebm) {
+  const base = path.basename(srcWebm, path.extname(srcWebm))
+  const dst = path.join(STORAGE_DIR, `${base}.mp4`)
+
+  return new Promise((resolve, reject) => {
+    const args = [
+      '-y',
+      '-i', srcWebm,
+      // H.264 baseline p/ compatibilidade ampla
+      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+      // áudio AAC padrão
+      '-c:a', 'aac', '-b:a', '128k',
+      dst
+    ]
+    const ff = spawn('ffmpeg', args, { stdio: 'ignore' })
+    ff.on('error', reject)
+    ff.on('close', (code) => code === 0 ? resolve(dst) : reject(new Error(`ffmpeg exit ${code}`)))
+  })
 }
 
 export async function buildServer() {
@@ -64,6 +86,16 @@ export async function buildServer() {
         const st = await fsp.stat(dest)
         if (st.size === 0) { await fsp.unlink(dest); return reply.code(422).send({ error: 'Arquivo vazio recebido' }) }
         saved.push({ name, size: st.size })
+
+        // transcodificação opcional
+        if (ENABLE_TRANSCODE && name.endsWith('.webm')) {
+          try {
+            const mp4 = await transcodeToMp4(dest)
+            saved.push({ name: path.basename(mp4), size: (await fsp.stat(mp4)).size })
+          } catch (e) {
+            req.log.warn({ err: String(e) }, 'ffmpeg transcode falhou')
+          }
+        }
       } else if (part.type === 'field' && part.fieldname === 'meta') {
         try { meta = JSON.parse(part.value) } catch {}
       }
