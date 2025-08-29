@@ -1,161 +1,73 @@
-// src/popup.ts
-const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T
-const epInput = $('#endpoint') as HTMLInputElement
-const btnStart = $('#btnStart') as HTMLButtonElement
-const btnStop = $('#btnStop') as HTMLButtonElement
-const btnSaveReplay = $('#btnSaveReplay') as HTMLButtonElement
-const statusEl = $('#status') as HTMLSpanElement
-const timerEl = $('#timer') as HTMLSpanElement
+const ep = document.getElementById('endpoint') as HTMLInputElement
+const btnOpenRecorder   = document.getElementById('btnOpenRecorder') as HTMLDivElement
+const btnRecordTab      = document.getElementById('btnRecordTab') as HTMLDivElement
+const btnInstantReplay  = document.getElementById('btnInstantReplay') as HTMLDivElement
 
-type Chunk = { blob: Blob; ts: number }
-
-let mediaStream: MediaStream | null = null
-let recorder: MediaRecorder | null = null
-let chunks: Blob[] = []
-let replayBuf: Chunk[] = []
-let replayMs = 120_000
-let startAt = 0
-let tickInt: number | null = null
-const MIME = 'video/webm;codecs=vp9,opus'
-
-function loadEndpoint() {
-  const v = localStorage.getItem('bi:endpoint') || 'http://localhost:8787/api/upload'
-  epInput.value = v
+ep.value = localStorage.getItem('bi:endpoint') || 'http://localhost:8787/api/upload'
+const persistEndpoint = () => {
+  const val = ep.value.trim()
+  localStorage.setItem('bi:endpoint', val)
+  chrome.storage.local.set({ endpoint: val }).catch(() => {})
 }
-function saveEndpoint() {
-  localStorage.setItem('bi:endpoint', epInput.value.trim())
-}
-epInput?.addEventListener('change', saveEndpoint)
-loadEndpoint()
+ep.addEventListener('change', persistEndpoint)
+persistEndpoint()
 
-function fmt(ms: number) {
-  const s = Math.max(0, Math.floor(ms / 1000))
-  const mm = String(Math.floor(s / 60)).padStart(2, '0')
-  const ss = String(s % 60).padStart(2, '0')
-  return `${mm}:${ss}`
-}
-function setStatus(s: string) { statusEl.textContent = s }
-
-function startTimer() {
-  if (tickInt) window.clearInterval(tickInt)
-  tickInt = window.setInterval(() => {
-    const now = Date.now()
-    timerEl.textContent = fmt(now - startAt)
-  }, 250)
-}
-function stopTimer() {
-  if (tickInt) window.clearInterval(tickInt)
-  tickInt = null
+function alertErr(e: unknown) {
+  const msg = (e as any)?.message || String(e)
+  console.error('[popup] error:', msg)
+  alert(msg)
 }
 
-function concatBlobs(arr: Blob[], type = 'video/webm') {
-  if (!arr.length) return new Blob([], { type })
-  return new Blob(arr, { type })
+function isCapturableUrl(url?: string | null) {
+  if (!url) return false
+  return /^https?:\/\//i.test(url) || /^file:\/\//i.test(url)
 }
 
-function buildReplayBlob(): Blob {
-  const cutoff = Date.now() - replayMs
-  const recent = replayBuf.filter(c => c.ts >= cutoff).map(c => c.blob)
-  return concatBlobs(recent, 'video/webm')
+async function getActiveTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!tab?.id) throw new Error('Sem guia ativa')
+  return tab
 }
 
-// Em MV3, a popup NÃO acessa o background via navigator.serviceWorker.
-// Use chrome.runtime.sendMessage para falar com o SW (background).
-async function sendUploadToBackground(blob: Blob, filename: string, kind: 'record'|'replay', endpoint: string) {
-  return new Promise<void>((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: 'UPLOAD_BLOB', payload: { filename, kind, endpoint } }, async (resp) => {
-      const lastErr = chrome.runtime.lastError
-      if (lastErr) { reject(lastErr.message); return }
-      if (resp?.ok) {
-        setStatus('upload OK')
-        resolve()
-      } else {
-        reject(resp?.error || 'upload failed')
-      }
-    })
-    // transfere o Blob via Offscreen fetch: cria URL e background fará fetch(url).then(r=>r.blob())
-    ;(async () => {
-      // Para blobs grandes, é melhor usar chrome.runtime.connect e streams; aqui simplificamos.
-      const ab = await blob.arrayBuffer()
-      chrome.runtime.sendMessage({ type: 'UPLOAD_BLOB_DATA', payload: { filename, kind, bytes: Array.from(new Uint8Array(ab)), endpoint } })
-    })()
-  })
-}
-
-async function startRecording() {
-  if (recorder) return
+// Abre gravador clássico (picker do Chrome)
+btnOpenRecorder.addEventListener('click', async () => {
   try {
-    mediaStream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: true })
-  } catch (e) {
-    alert('Permissão negada para captura de tela.')
-    return
-  }
+    persistEndpoint()
+    const url = chrome.runtime.getURL('recorder.html')
+    await chrome.tabs.create({ url })
+    window.close()
+  } catch (e) { alertErr(e) }
+})
 
-  chunks = []
-  replayBuf = []
-  recorder = new MediaRecorder(mediaStream!, { mimeType: MIME })
-
-  recorder.ondataavailable = (ev) => {
-    if (ev.data && ev.data.size) {
-      chunks.push(ev.data)
-      replayBuf.push({ blob: ev.data, ts: Date.now() })
-      const cutoff = Date.now() - replayMs
-      while (replayBuf.length && replayBuf[0].ts < cutoff) replayBuf.shift()
-    }
-  }
-  recorder.onstop = async () => {
-    stopTimer()
-    try {
-      const out = concatBlobs(chunks, 'video/webm')
-      if (!out.size) { setStatus('vazio'); return }
-      await sendUploadToBackground(out, `record-${Date.now()}.webm`, 'record', epInput.value.trim())
-    } catch (e) {
-      setStatus('upload FAIL')
-      alert(String(e))
-    } finally {
-      cleanup()
-    }
-  }
-
-  recorder.start(1000)
-  startAt = Date.now()
-  startTimer()
-  btnStart.disabled = true
-  btnStop.disabled = false
-  btnSaveReplay.disabled = false
-  setStatus('gravando')
-}
-
-function stopRecording() {
-  if (!recorder) return
-  recorder.stop()
-  mediaStream?.getTracks().forEach(t => t.stop())
-}
-
-async function saveReplay() {
+// Record Tab (se quiser overlay — opcional; conteúdo atual é “vazio”)
+btnRecordTab.addEventListener('click', async () => {
   try {
-    const blob = buildReplayBlob()
-    if (!blob.size) { alert('Replay vazio'); return }
-    await sendUploadToBackground(blob, `replay-${Date.now()}.webm`, 'replay', epInput.value.trim())
-  } catch (e) {
-    setStatus('upload FAIL')
-    alert(String(e))
-  }
-}
+    persistEndpoint()
+    const tab = await getActiveTab()
+    if (!isCapturableUrl(tab.url)) {
+      throw new Error('Esta guia não pode ser capturada (chrome://, Web Store, páginas internas). Abra um site http/https e tente novamente.')
+    }
+    await chrome.scripting.executeScript({ target: { tabId: tab.id! }, files: ['assets/content.js'] })
+    await chrome.tabs.sendMessage(tab.id!, { type: 'TAB_OVERLAY' })
+    window.close()
+  } catch (e) { alertErr(e) }
+})
 
-function cleanup() {
-  recorder = null
-  mediaStream = null
-  btnStart.disabled = false
-  btnStop.disabled = true
-  setStatus('idle')
-}
+// Instant Replay — garante offscreen, pega streamId e abre modal
+btnInstantReplay.addEventListener('click', async () => {
+  try {
+    persistEndpoint()
+    const tab = await getActiveTab()
+    if (!isCapturableUrl(tab.url)) {
+      throw new Error('Instant Replay indisponível nesta página (chrome://, Web Store, páginas internas). Abra um site http/https e tente novamente.')
+    }
 
-btnStart.onclick = startRecording
-btnStop.onclick = stopRecording
-btnSaveReplay.onclick = saveReplay
+    const prep = await chrome.runtime.sendMessage({ type: 'REPLAY_ENSURE_RUNNING', tabId: tab.id })
+    if (prep && prep.ok === false) throw new Error(prep.error || 'Não foi possível preparar o Replay')
 
-btnStop.disabled = true
-btnSaveReplay.disabled = true
-setStatus('idle')
-timerEl.textContent = '00:00'
+    await chrome.scripting.executeScript({ target: { tabId: tab.id! }, files: ['assets/replay-probe.js'] })
+    await chrome.scripting.executeScript({ target: { tabId: tab.id! }, files: ['assets/replay-modal.js'] })
+    await chrome.tabs.sendMessage(tab.id!, { type: 'OPEN_REPLAY_MODAL' })
+    window.close()
+  } catch (e) { alertErr(e) }
+})
