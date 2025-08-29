@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: homologation
-      url: https://homologation.example.com
+      url: https://bug-inspector-homol-mcc.herokuapp.com
     steps:
       - name: Download Server Artifact
         uses: actions/download-artifact@v4
@@ -72,15 +72,16 @@ jobs:
           name: bug-inspector-extension
           path: ./extension/dist
 
-      - name: Deploy to Homologation
+      - name: Deploy to Heroku Homologation
         run: |
-          echo "Deploying server to homologation..."
-          # Adicione aqui os comandos para deploy do servidor para o ambiente de homologação
-          # Ex: scp -r ./server user@homol-server:/var/www/bug-inspector-homol
-          echo "Deploying extension to homologation..."
-          # Adicione aqui os comandos para deploy da extensão para o ambiente de homologação
-          # Isso geralmente envolve copiar os arquivos para um servidor web ou um bucket de armazenamento
+          echo "Deploying to Heroku Homologation..."
+          git remote add heroku-homol https://git.heroku.com/bug-inspector-homol-mcc.git || true
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git push heroku-homol HEAD:main --force
           echo "Homologation deployment complete!"
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
 
   deploy_main:
     needs: build_and_test
@@ -88,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://production.example.com
+      url: https://bug-inspector-prod-mcc.herokuapp.com
     steps:
       - name: Download Server Artifact
         uses: actions/download-artifact@v4
@@ -102,35 +103,13 @@ jobs:
           name: bug-inspector-extension
           path: ./extension/dist
 
-      - name: Deploy to Production
+      - name: Deploy to Heroku Production
         run: |
-          echo "Deploying server to production..."
-          # Adicione aqui os comandos para deploy do servidor para o ambiente de produção
-          # Ex: scp -r ./server user@prod-server:/var/www/bug-inspector-prod
-          echo "Deploying extension to production..."
-          # Adicione aqui os comandos para deploy da extensão para o ambiente de produção
+          echo "Deploying to Heroku Production..."
+          git remote add heroku-prod https://git.heroku.com/bug-inspector-prod-mcc.git || true
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git push heroku-prod HEAD:main --force
           echo "Production deployment complete!"
-
-  # Job para commits automáticos (opcional, para a Manus )
-  # auto_commit:
-  #   needs: build_and_test
-  #   if: success()
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         token: ${{ secrets.GH_PAT }}
-
-  #     - name: Configure Git
-  #       run: |
-  #         git config user.name "github-actions[bot]"
-  #         git config user.email "github-actions[bot]@users.noreply.github.com"
-
-  #     - name: Commit changes (if any)
-  #       run: |
-  #         git add .
-  #         git diff --quiet || git commit -m "CI: Automated build and test updates"
-  #         git push
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
