@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "test": "NODE_ENV=test vitest run --dir tests"
+    "test": "NODE_ENV=test vitest run --dir tests" 
   },
   "keywords": [],
   "author": "",
